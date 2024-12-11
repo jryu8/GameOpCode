@@ -1,0 +1,30 @@
+import pandas as pd
+from sklearn.cluster import KMeans
+
+# Load and clean data
+data = pd.read_csv('GameRating.csv')
+
+def convert_rating(rating):
+    try:
+        return float(rating.split('/')[0])
+    except ValueError:
+        return None
+
+data['website_rating'] = data['website_rating'].apply(convert_rating)
+data['public_rating'] = data['public_rating'].apply(convert_rating)
+
+data_cleaned = data.dropna(subset=['website_rating', 'public_rating'])
+
+# Calculate mean ratings by genre
+mean_ratings = data_cleaned.groupby('type')[['website_rating', 'public_rating']].mean()
+
+# Apply K-means clustering
+kmeans = KMeans(n_clusters=5, random_state=42)
+kmeans.fit(mean_ratings.values)
+
+# Add cluster labels to the data
+genre_clusters = mean_ratings.copy()
+genre_clusters['Cluster'] = kmeans.labels_
+
+# Analyze results
+cluster_summary = genre_clusters.groupby('Cluster')[['website_rating', 'public_rating']].mean()
